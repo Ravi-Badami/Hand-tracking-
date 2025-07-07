@@ -12,7 +12,8 @@ hands = mp_hands.Hands(max_num_hands=2, min_detection_confidence=0.8)
 mp_draw = mp.solutions.drawing_utils
 
 last_trigger_time = 0  # cooldown timer
-prev_x = [None]  # for swipe detection
+prev_x = [None]  # for horizontal swipe detection
+prev_y = [None]  # for vertical swipe detection
 
 def count_raised_fingers(landmarks):
     finger_tips = [8, 12, 16, 20]
@@ -52,6 +53,16 @@ def snap_window_left():
     win32gui.MoveWindow(hwnd, 0, 0, screen_width // 2, screen_height, True)
     print("[INFO] Snapped window to left")
 
+def minimize_window():
+    hwnd = win32gui.GetForegroundWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+    print("[INFO] Window minimized")
+
+def maximize_window():
+    hwnd = win32gui.GetForegroundWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+    print("[INFO] Window maximized")
+
 def get_hand_landmarks(frame):
     img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = hands.process(img_rgb)
@@ -72,28 +83,41 @@ def get_hand_landmarks(frame):
                 launch_whatsapp()
 
             if raised == 4:
-                x_pos = landmarks[8][0]
+                x_pos = landmarks[8][0]  # for left/right
+                y_pos = landmarks[8][1]  # for up/down
 
-                if prev_x[0] is not None:
-                    delta = x_pos - prev_x[0]
-                    print(f"[DEBUG] 4-Finger Swipe: x_prev={prev_x[0]:.3f}, x_now={x_pos:.3f}, delta={delta:.3f}")
+                if prev_x[0] is not None and prev_y[0] is not None:
+                    delta_x = x_pos - prev_x[0]
+                    delta_y = y_pos - prev_y[0]
 
-                    if delta > 0.15:
+                    print(f"[DEBUG] Swipe: x_prev={prev_x[0]:.3f}, x_now={x_pos:.3f}, delta_x={delta_x:.3f}, y_prev={prev_y[0]:.3f}, y_now={y_pos:.3f}, delta_y={delta_y:.3f}")
+
+                    if delta_x > 0.15:
                         gesture_label = "Swipe 4 → Snap Right"
                         print("[INFO] Swipe right detected → snapping window right")
                         snap_window_right()
-                    elif delta < -0.15:
+                    elif delta_x < -0.15:
                         gesture_label = "Swipe 4 ← Snap Left"
                         print("[INFO] Swipe left detected → snapping window left")
                         snap_window_left()
+                    elif delta_y > 0.15:
+                        gesture_label = "Swipe 4 ↓ Minimize"
+                        print("[INFO] Swipe down detected → minimizing window")
+                        minimize_window()
+                    elif delta_y < -0.15:
+                        gesture_label = "Swipe 4 ↑ Maximize"
+                        print("[INFO] Swipe up detected → maximizing window")
+                        maximize_window()
                     else:
                         print("[INFO] Swipe movement too small")
                 else:
                     print("[DEBUG] Starting swipe tracking...")
 
                 prev_x[0] = x_pos
+                prev_y[0] = y_pos
             else:
                 prev_x[0] = None
+                prev_y[0] = None
 
             output.append({
                 "hand": label,
