@@ -1,7 +1,4 @@
-
-"""
 ✨ Features:
-
 - ✌️ Two fingers raised → Launches WhatsApp Desktop
 - 🖐️ 4 fingers swipe right → Snap window to the right
 - 🖐️ 4 fingers swipe left → Snap window to the left
