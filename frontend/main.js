@@ -21,7 +21,7 @@ function createHand() {
   const points = [];
   for (let i = 0; i < 21; i++) {
     const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(0.022),
+      new THREE.SphereGeometry(0.02),
       new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     );
     scene.add(sphere);
@@ -41,6 +41,9 @@ function createHand() {
   label.style.color = "white";
   label.style.fontSize = "18px";
   label.style.fontWeight = "bold";
+  label.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+  label.style.padding = "4px 8px";
+  label.style.borderRadius = "6px";
   label.innerText = "";
   document.body.appendChild(label);
 
@@ -69,7 +72,7 @@ function updateHand(hand, data) {
 
   hand.label.style.left = `${screenX}px`;
   hand.label.style.top = `${screenY}px`;
-  hand.label.innerText = `${data.hand}`;  // "Left" or "Right"
+  hand.label.innerText = `${data.hand}\n${data.gesture}`;
 }
 
 function fetchLandmarks() {
@@ -85,27 +88,18 @@ function fetchLandmarks() {
       });
 
       for (let i = data.length; i < handObjects.length; i++) {
-  handObjects[i].points.forEach(p => {
-    p.position.set(999, 999, 999);  // Move spheres out of view
-  });
-
-  // Clear lines by setting all line positions far away
-  const posArr = handObjects[i].line.geometry.attributes.position.array;
-  for (let j = 0; j < posArr.length; j++) {
-    posArr[j] = 999;
-  }
-  handObjects[i].line.geometry.attributes.position.needsUpdate = true;
-
-  // Hide label
-  handObjects[i].label.style.left = "-999px";
-  handObjects[i].label.style.top = "-999px";
-}
-
+        handObjects[i].points.forEach(p => p.position.set(999, 999, 999));
+        const posArr = handObjects[i].line.geometry.attributes.position.array;
+        for (let j = 0; j < posArr.length; j++) posArr[j] = 999;
+        handObjects[i].line.geometry.attributes.position.needsUpdate = true;
+        handObjects[i].label.style.left = "-999px";
+        handObjects[i].label.style.top = "-999px";
+      }
     })
     .catch(err => console.error("API error:", err));
 }
 
-setInterval(fetchLandmarks, 66);
+setInterval(fetchLandmarks, 66); // ~15 FPS
 
 function animate() {
   renderer.render(scene, camera);

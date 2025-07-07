@@ -1,1 +1,1 @@
-# Hand-tracking-
+# Basic hand tracking
