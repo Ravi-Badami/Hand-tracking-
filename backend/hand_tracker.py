@@ -44,6 +44,14 @@ def snap_window_right():
     win32gui.MoveWindow(hwnd, screen_width // 2, 0, screen_width // 2, screen_height, True)
     print("[INFO] Snapped window to right")
 
+def snap_window_left():
+    hwnd = win32gui.GetForegroundWindow()
+    screen_width = ctypes.windll.user32.GetSystemMetrics(0)
+    screen_height = ctypes.windll.user32.GetSystemMetrics(1)
+    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+    win32gui.MoveWindow(hwnd, 0, 0, screen_width // 2, screen_height, True)
+    print("[INFO] Snapped window to left")
+
 def get_hand_landmarks(frame):
     img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = hands.process(img_rgb)
@@ -64,7 +72,6 @@ def get_hand_landmarks(frame):
                 launch_whatsapp()
 
             if raised == 4:
-                gesture_label = "Swipe 4 → Snap Right"
                 x_pos = landmarks[8][0]
 
                 if prev_x[0] is not None:
@@ -72,8 +79,13 @@ def get_hand_landmarks(frame):
                     print(f"[DEBUG] 4-Finger Swipe: x_prev={prev_x[0]:.3f}, x_now={x_pos:.3f}, delta={delta:.3f}")
 
                     if delta > 0.15:
-                        print("[INFO] Swipe detected → snapping window right")
+                        gesture_label = "Swipe 4 → Snap Right"
+                        print("[INFO] Swipe right detected → snapping window right")
                         snap_window_right()
+                    elif delta < -0.15:
+                        gesture_label = "Swipe 4 ← Snap Left"
+                        print("[INFO] Swipe left detected → snapping window left")
+                        snap_window_left()
                     else:
                         print("[INFO] Swipe movement too small")
                 else:
