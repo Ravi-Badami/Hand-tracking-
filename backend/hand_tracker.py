@@ -20,8 +20,24 @@ pinching = False  # To track pinch state
 def is_pinching(landmarks):
     thumb_tip = landmarks[4]
     index_tip = landmarks[8]
-    distance = math.sqrt((thumb_tip[0] - index_tip[0])**2 + (thumb_tip[1] - index_tip[1])**2)
-    return distance < 0.05  # Pinch threshold
+    middle_tip = landmarks[12]
+    ring_tip = landmarks[16]
+    pinky_tip = landmarks[20]
+
+    # Calculate distance between thumb and other fingertips
+    index_dist = math.sqrt((thumb_tip[0] - index_tip[0])**2 + (thumb_tip[1] - index_tip[1])**2)
+    middle_dist = math.sqrt((thumb_tip[0] - middle_tip[0])**2 + (thumb_tip[1] - middle_tip[1])**2)
+    ring_dist = math.sqrt((thumb_tip[0] - ring_tip[0])**2 + (thumb_tip[1] - ring_tip[1])**2)
+    pinky_dist = math.sqrt((thumb_tip[0] - pinky_tip[0])**2 + (thumb_tip[1] - pinky_tip[1])**2)
+
+    # Check if only index and thumb are pinching
+    return index_dist < 0.05 and middle_dist > 0.1 and ring_dist > 0.1 and pinky_dist > 0.1
+
+def is_thumb_closed(landmarks):
+    thumb_tip = landmarks[4]
+    index_finger_base = landmarks[5]
+    distance = math.sqrt((thumb_tip[0] - index_finger_base[0])**2 + (thumb_tip[1] - index_finger_base[1])**2)
+    return distance < 0.1 # Thumb closed threshold
 
 def count_raised_fingers(landmarks):
     finger_tips = [8, 12, 16, 20]
@@ -38,7 +54,7 @@ def launch_whatsapp():
     if current_time - last_trigger_time > 5:
         try:
             subprocess.Popen([
-                'explorer', 'shell:AppsFolder\\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App'
+                'explorer', 'shell:AppsFolder\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App'
             ], shell=True)
             print("[INFO] WhatsApp launched")
             last_trigger_time = current_time
@@ -87,7 +103,7 @@ def get_hand_landmarks(frame):
             raised = count_raised_fingers(landmarks)
             gesture_label = f"{raised} fingers"
 
-            pinch_status = "Not Pinching"  # ✅ Correct indentation here
+            pinch_status = "Not Pinching"
             if is_pinching(landmarks):
                 if not pinching:
                     minimize_window()
@@ -98,6 +114,11 @@ def get_hand_landmarks(frame):
                     maximize_window()
                     pinching = False
                 pinch_status = "Not Pinching"
+            
+            thumb_status = "Thumb Open"
+            if is_thumb_closed(landmarks):
+                thumb_status = "Thumb Closed"
+
 
             if raised == 2:
                 gesture_label = "Open WhatsApp"
@@ -144,6 +165,7 @@ def get_hand_landmarks(frame):
                 "hand": label,
                 "gesture": gesture_label,
                 "pinch_status": pinch_status,
+                "thumb_status": thumb_status,
                 "landmarks": landmarks
             })
 

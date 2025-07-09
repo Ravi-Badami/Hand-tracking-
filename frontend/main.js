@@ -74,7 +74,8 @@ function updateHand(hand, data) {
   hand.label.style.top = `${screenY}px`;
   hand.label.innerText = `${data.hand}
 ${data.gesture}
-${data.pinch_status}`;
+${data.pinch_status}
+${data.thumb_status}`;
 }
 
 function fetchLandmarks() {
