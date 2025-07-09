@@ -6,6 +6,7 @@ import time
 import ctypes
 import win32gui
 import win32con
+import math
 
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(max_num_hands=2, min_detection_confidence=0.8)
@@ -14,6 +15,13 @@ mp_draw = mp.solutions.drawing_utils
 last_trigger_time = 0  # cooldown timer
 prev_x = [None]  # for horizontal swipe detection
 prev_y = [None]  # for vertical swipe detection
+pinching = False  # To track pinch state
+
+def is_pinching(landmarks):
+    thumb_tip = landmarks[4]
+    index_tip = landmarks[8]
+    distance = math.sqrt((thumb_tip[0] - index_tip[0])**2 + (thumb_tip[1] - index_tip[1])**2)
+    return distance < 0.05  # Pinch threshold
 
 def count_raised_fingers(landmarks):
     finger_tips = [8, 12, 16, 20]
@@ -64,6 +72,7 @@ def maximize_window():
     print("[INFO] Window maximized")
 
 def get_hand_landmarks(frame):
+    global pinching
     img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = hands.process(img_rgb)
     output = []
@@ -78,11 +87,23 @@ def get_hand_landmarks(frame):
             raised = count_raised_fingers(landmarks)
             gesture_label = f"{raised} fingers"
 
+            pinch_status = "Not Pinching"  # ✅ Correct indentation here
+            if is_pinching(landmarks):
+                if not pinching:
+                    minimize_window()
+                    pinching = True
+                pinch_status = "Pinching"
+            else:
+                if pinching:
+                    maximize_window()
+                    pinching = False
+                pinch_status = "Not Pinching"
+
             if raised == 2:
                 gesture_label = "Open WhatsApp"
                 launch_whatsapp()
 
-            if raised == 4:
+            if raised == 1:
                 x_pos = landmarks[8][0]  # for left/right
                 y_pos = landmarks[8][1]  # for up/down
 
@@ -93,19 +114,19 @@ def get_hand_landmarks(frame):
                     print(f"[DEBUG] Swipe: x_prev={prev_x[0]:.3f}, x_now={x_pos:.3f}, delta_x={delta_x:.3f}, y_prev={prev_y[0]:.3f}, y_now={y_pos:.3f}, delta_y={delta_y:.3f}")
 
                     if delta_x > 0.15:
-                        gesture_label = "Swipe 4 → Snap Right"
+                        gesture_label = "Swipe 1 → Snap Right"
                         print("[INFO] Swipe right detected → snapping window right")
                         snap_window_right()
                     elif delta_x < -0.15:
-                        gesture_label = "Swipe 4 ← Snap Left"
+                        gesture_label = "Swipe 1 ← Snap Left"
                         print("[INFO] Swipe left detected → snapping window left")
                         snap_window_left()
                     elif delta_y > 0.15:
-                        gesture_label = "Swipe 4 ↓ Minimize"
+                        gesture_label = "Swipe 1 ↓ Minimize"
                         print("[INFO] Swipe down detected → minimizing window")
                         minimize_window()
                     elif delta_y < -0.15:
-                        gesture_label = "Swipe 4 ↑ Maximize"
+                        gesture_label = "Swipe 1 ↑ Maximize"
                         print("[INFO] Swipe up detected → maximizing window")
                         maximize_window()
                     else:
@@ -122,7 +143,9 @@ def get_hand_landmarks(frame):
             output.append({
                 "hand": label,
                 "gesture": gesture_label,
+                "pinch_status": pinch_status,
                 "landmarks": landmarks
             })
 
     return output
+
